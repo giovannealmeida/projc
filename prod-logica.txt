@@ -1,0 +1,10 @@
+S0
+S1
+Sp
+Sq
+S!S
+S(SBS)
+B|
+B&
+B:
+B-
