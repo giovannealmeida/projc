@@ -9,7 +9,7 @@
 #define PROD_NUM 10 //Número de transições E símbolos (vetores 'S' e 'B')
 #define AMOSTRA_NUM 4096 // Número de amostras
 #define ARV_TAM 256 //Tamanho da árvore de transições
-#define DIST 0 //Distância entre os filhos inseridos na árvore-vetor
+#define DIST 1 //Distância entre os filhos inseridos na árvore-vetor
 
 //Protótipos de funções
 char inicializaProd(void); //Inicializa os vetores de produções 'S' e 'B' e adiciona no topo da pilha o primeiro caractere não terminal
@@ -20,6 +20,7 @@ int buscaTransicaoB(char c); //Retorna a posição de um "transição" no vetor 'B' 
 int pegaEntrada(void); //Pega a cadeia de entrada
 void mostraPilha(void); //Exibe a pilha
 void mostraEntrada(void); //Exibe a cadeia de entrada
+void mostraProducoes(void);
 void notificarErroGramatica(void); //Notifica erro de gramática.
 int pop(void); //Remove o elemento do topo da pilha
 int push(char e); //Insere um elemento no topo da pilha
@@ -31,15 +32,18 @@ void iniciaAutomato(void); //Inicia a verificação de sintaxe
 void insereArvore(int pai,char N, int transicao); //Insere na árvore um filho d a transição 'pos' do não-terminal 'N'
 void mostraArvore(void); //Exibe a àrvore-vetor
 void resetaArvore(void); //Reseta a árvore
+void criaArvore(void); //Insere as transições na árvore de produções
 
 //Variáveis globais
 char S[PROD_NUM][PROD_NUM], B[PROD_NUM][PROD_NUM], naoTermS, naoTermB;
+char producoes[PROD_NUM][PROD_NUM];
 char arvore[ARV_TAM]; //Árvore de análise sintática
 int flag_setado_NaoTermB = 0; //Flag que determina se o símbolo não terminal B já foi setado
 char pilha[PILHA_TAM]; //Pilha
 char entrada[PILHA_TAM]; //Cadeia de entrada
 int topo = -1; //Guarda o topo da pilha
 int carret = -1; //Guarda a posição do cursor que varrerá a antrada
+int prod_carret = -1;
 FILE *amostra, *resultados; //Arquivos de amostra e do resultado da análise
 FILE *prod; //Arquivo de produções
 int flag_escrevendo = -1; //1 se o resultado estiver sendo escrito num arquivo externo
@@ -162,6 +166,12 @@ void mostraPilha(){
 void mostraEntrada(){
     printf("Entrada: %s",entrada);
 }
+void mostraProducoes(){
+	int i;
+	for(i=0;producoes[i][0]!='\0';i++){
+		puts(producoes[i]);
+	}
+}
 
 void notificarErroGramatica(){
 	if(flag_escrevendo){
@@ -204,8 +214,12 @@ char read(){
 
 void init(){
     pilha[0] = inicializaProd(); //Inicia a pilha com o primeiro caractere não terminal do arquivo
+    producoes[0][0] = 'S';
+    arvore[0] = 'S';
+    k_tree = 1;
     topo = 0; // Ajusta o topo da pilha
     carret = 0; //Ajusta o cursor para o início da entrada
+    prod_carret = 1;
 }
 
 void iniciaAutomato(){
@@ -228,9 +242,7 @@ void iniciaAutomato(){
 					return;
 				} else {
 					strcpy(trans,B[transicao]);
-					printf("Inserindo da árvore >\nPai: %d\nNT: \'B\',\nTransição: %s\n",carret,B[transicao]);
-					insereArvore(carret,'B',transicao);
-					getch();
+					strcpy(producoes[prod_carret++],trans);
 				}
 				
 			} else { //senão for o segundo não-terminal, verifica se é o primeiro não-terminal (S) que está no topo
@@ -241,9 +253,7 @@ void iniciaAutomato(){
 						return;
 					} else {
 						strcpy(trans,S[transicao]);
-						printf("Inserindo da árvore >\nPai: %d\nNT: \'S\',\nTransição: %s\n",carret,S[transicao]);
-						insereArvore(carret,'S',transicao);
-						getch();
+						strcpy(producoes[prod_carret++],trans);
 					}
 				}
 			}
@@ -267,9 +277,9 @@ void iniciaAutomato(){
 		    	fprintf(resultados,"%s - FÓRMULA BEM FORMADA ACEITA!\n",entrada);
 			} else {
 				printf("\nFÓRMULA BEM FORMADA ACEITA!\n\n");
+				mostraProducoes();
+				criaArvore();
 				mostraArvore();
-				printf("\n");
-				resetaArvore();
 			}
 		} else {
 			notificarErroGramatica();
@@ -277,6 +287,10 @@ void iniciaAutomato(){
 	} else {
 		notificarErroGramatica();
 	}
+	
+	//mostraProducoes();
+	
+	//producoesToArvore();
 }
 
 void insereArvore(int pai, char N, int transicao){
@@ -285,9 +299,11 @@ void insereArvore(int pai, char N, int transicao){
 	switch(N){
 		case 'S':
 			if(k_tree==0){ //A árvore tá vazia
-				for(;k_tree<strlen(S[transicao]);k_tree++){
-					arvore[k_tree] = S[transicao][k_tree];
-				}
+			arvore[k_tree++]='S';
+			
+			/*	for(k_tree=0;k_tree<strlen(S[transicao]);k_tree++){
+					arvore[k_tree] = S[transicao][k_tree];//-1 senão pula o primeiro caractere da produção
+				}*/
 				fim_tree = k_tree;
 			} else {
 				for(i=0;i<strlen(S[transicao]);i++){
@@ -297,9 +313,9 @@ void insereArvore(int pai, char N, int transicao){
 			}
 			break;
 		case 'B':
-			if(k_tree==0){
-				for(k_tree=0;k_tree<strlen(B[transicao]);k_tree++){
-					arvore[k_tree] = B[transicao][k_tree];
+			if(k_tree==1){
+				for(k_tree=1;k_tree<strlen(B[transicao]);k_tree++){
+					arvore[k_tree] = B[transicao][k_tree-1];
 				}
 				fim_tree = k_tree;
 			} else {
@@ -317,12 +333,38 @@ void insereArvore(int pai, char N, int transicao){
 void mostraArvore(){
 	int i;
 	printf("Tree -> ");
-	for(i=0;i<fim_tree;i++){
+	for(i=0;i<=fim_tree;i++){
 		printf(" %c |",arvore[i]);
 	}
+	printf("\nFim: %d\n",fim_tree);
 }
 
 void resetaArvore(){
 	fim_tree = 0;
 	k_tree = 0;
+}
+
+void criaArvore(){
+	int i, j, arvore_carret=0, pai=0;
+	
+	arvore[0]='S';
+	arvore_carret++;
+	k_tree=1;
+	fim_tree++;
+	
+	for(i=1;producoes[i][0]!='\0';i++){
+		
+		for(;!isupper(arvore[pai]);pai++); //Procura a posição do próximo pai
+		
+		printf("Inserindo produção \"%s\" filho de \'%c\'[%d]\n",producoes[i],arvore[pai],pai);
+		
+		for(j=0;producoes[i][j]!='\0';j++){
+			printf("Inserindo filho em [%d] do pai [%d]\n",k_tree*pai+DIST+j,pai);
+			arvore[k_tree*pai+DIST+j] = producoes[i][j];
+		}
+		fim_tree=k_tree*pai+j;
+		if(j>k_tree)
+			k_tree=j;
+		pai++;
+	}
 }
