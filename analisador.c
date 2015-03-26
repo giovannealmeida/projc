@@ -29,8 +29,8 @@ char read(void); //Consome o elemento atual da entrada e faz pop na pilha
 void init(void); //Inicializa variáveis e vetores
 void iniciaAutomato(void); //Inicia a verificação de sintaxe
 //Funções de árvore
-void insereArvore(int pai,char N, int transicao); //Insere na árvore um filho d a transição 'pos' do não-terminal 'N'
-void mostraArvore(void); //Exibe a àrvore-vetor
+void mostraArvore(void); //Exibe a árvore-vetor
+void mostraNos(void); //Mostra somente as partes preenchidas da árvore e a posição dos elementos
 void resetaArvore(void); //Reseta a árvore
 void criaArvore(void); //Insere as transições na árvore de produções
 
@@ -168,9 +168,13 @@ void mostraEntrada(){
 }
 void mostraProducoes(){
 	int i;
+	printf("\nProduções|\n\n");
+	printf("+---+-----\n");
 	for(i=0;producoes[i][0]!='\0';i++){
-		puts(producoes[i]);
+		printf("|%3d|%3s\n",i,producoes[i]);
+		printf("+---+-----\n");
 	}
+	printf("\n\n");
 }
 
 void notificarErroGramatica(){
@@ -277,9 +281,9 @@ void iniciaAutomato(){
 		    	fprintf(resultados,"%s - FÓRMULA BEM FORMADA ACEITA!\n",entrada);
 			} else {
 				printf("\nFÓRMULA BEM FORMADA ACEITA!\n\n");
-				mostraProducoes();
+				
 				criaArvore();
-				mostraArvore();
+				mostraNos();
 			}
 		} else {
 			notificarErroGramatica();
@@ -288,55 +292,27 @@ void iniciaAutomato(){
 		notificarErroGramatica();
 	}
 	
-	//mostraProducoes();
-	
-	//producoesToArvore();
-}
-
-void insereArvore(int pai, char N, int transicao){
-	int i;
-	
-	switch(N){
-		case 'S':
-			if(k_tree==0){ //A árvore tá vazia
-			arvore[k_tree++]='S';
-			
-			/*	for(k_tree=0;k_tree<strlen(S[transicao]);k_tree++){
-					arvore[k_tree] = S[transicao][k_tree];//-1 senão pula o primeiro caractere da produção
-				}*/
-				fim_tree = k_tree;
-			} else {
-				for(i=0;i<strlen(S[transicao]);i++){
-					printf("Inserindo na posicao %d da arvore: %c\n",k_tree*pai+DIST+i,S[transicao][i]);
-					arvore[k_tree*pai+DIST+i] = S[transicao][i];
-				}
-			}
-			break;
-		case 'B':
-			if(k_tree==1){
-				for(k_tree=1;k_tree<strlen(B[transicao]);k_tree++){
-					arvore[k_tree] = B[transicao][k_tree-1];
-				}
-				fim_tree = k_tree;
-			} else {
-				for(i=0;i<strlen(B[transicao]);i++){
-					printf("Inserindo na posicao %d da arvore: %c\n",k_tree*pai+DIST+i,B[transicao][i]);
-					arvore[k_tree*pai+DIST+i] = B[transicao][i];
-				}
-			}
-			break;
-	}
-	if(fim_tree < k_tree*pai+DIST+i) //Reajusta o fim da árvore no vetor
-		fim_tree = k_tree*pai+DIST+i;
 }
 
 void mostraArvore(){
 	int i;
-	printf("Tree -> ");
+	printf("Árvore-vetor -> ");
 	for(i=0;i<=fim_tree;i++){
 		printf(" %c |",arvore[i]);
 	}
-	printf("\nFim: %d\n",fim_tree);
+	printf("\n\n");
+}
+
+void mostraNos(){
+	int i;
+	printf("Árvore|\n\n");
+	printf("+-----+---+\n");
+	for(i=0;i<=fim_tree;i++){
+		if(arvore[i]!='\0'){
+			printf("| %3d | %c |\n",i,arvore[i]);
+			printf("+-----+---+\n");
+		}
+	}
 }
 
 void resetaArvore(){
@@ -345,26 +321,25 @@ void resetaArvore(){
 }
 
 void criaArvore(){
-	int i, j, arvore_carret=0, pai=0;
+	int i, j, pai=0;
 	
 	arvore[0]='S';
-	arvore_carret++;
-	k_tree=1;
-	fim_tree++;
 	
-	for(i=1;producoes[i][0]!='\0';i++){
+	k_tree=1; //A maior produção atualmente tem comprimento 1. É o 'S'
+	fim_tree=1; //A árvore termina na posição 1 pois só tem um caractere
+	
+	for(i=1;producoes[i][0]!='\0';i++){ //Percorre todas as produções
 		
 		for(;!isupper(arvore[pai]);pai++); //Procura a posição do próximo pai
 		
-		printf("Inserindo produção \"%s\" filho de \'%c\'[%d]\n",producoes[i],arvore[pai],pai);
+		for(j=0;producoes[i][j]!='\0';j++) //Passa os caracteres da produção pra árvore
+			arvore[k_tree*pai+DIST+j] = producoes[i][j]; //"k_tree*pai+DIST" é a posição do filho do não-terminal na posição "pai"
 		
-		for(j=0;producoes[i][j]!='\0';j++){
-			printf("Inserindo filho em [%d] do pai [%d]\n",k_tree*pai+DIST+j,pai);
-			arvore[k_tree*pai+DIST+j] = producoes[i][j];
-		}
 		fim_tree=k_tree*pai+j;
-		if(j>k_tree)
+		
+		if(j>k_tree) //j vai ter o comprimento da última produção. Se esse comprimento for maior que o anterior, atualiza o valor da constante
 			k_tree=j;
-		pai++;
+			
+		pai++; //Incrementa a posição do pai atual para procurar o próximo
 	}
 }
