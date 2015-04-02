@@ -170,7 +170,7 @@ void mostraProducoes(){
 	int i;
 	printf("\nProduções|\n\n");
 	printf("+---+-----\n");
-	for(i=0;producoes[i][0]!='\0';i++){
+	for(i=0;i<prod_carret;i++){
 		printf("|%3d|%3s\n",i,producoes[i]);
 		printf("+---+-----\n");
 	}
@@ -217,8 +217,11 @@ char read(){
 }
 
 void init(){
-    pilha[0] = inicializaProd(); //Inicia a pilha com o primeiro caractere não terminal do arquivo
+    int i;
+	pilha[0] = inicializaProd(); //Inicia a pilha com o primeiro caractere não terminal do arquivo
     producoes[0][0] = 'S';
+    for(i=0;i<ARV_TAM;i++)
+    	arvore[i] = '_';
     arvore[0] = 'S';
     k_tree = 1;
     topo = 0; // Ajusta o topo da pilha
@@ -284,6 +287,7 @@ void iniciaAutomato(){
 				
 				criaArvore();
 				mostraNos();
+				resetaArvore();
 			}
 		} else {
 			notificarErroGramatica();
@@ -308,7 +312,7 @@ void mostraNos(){
 	printf("Árvore|\n\n");
 	printf("+-----+---+\n");
 	for(i=0;i<=fim_tree;i++){
-		if(arvore[i]!='\0'){
+		if(arvore[i]!='_'){
 			printf("| %3d | %c |\n",i,arvore[i]);
 			printf("+-----+---+\n");
 		}
@@ -316,8 +320,13 @@ void mostraNos(){
 }
 
 void resetaArvore(){
+	int i;
+	for(i=0;i<ARV_TAM;i++){
+		arvore[i] = '_';
+	}
 	fim_tree = 0;
 	k_tree = 0;
+	prod_carret = 0;
 }
 
 void criaArvore(){
@@ -328,7 +337,7 @@ void criaArvore(){
 	k_tree=1; //A maior produção atualmente tem comprimento 1. É o 'S'
 	fim_tree=1; //A árvore termina na posição 1 pois só tem um caractere
 	
-	for(i=1;producoes[i][0]!='\0';i++){ //Percorre todas as produções
+	for(i=1;i<prod_carret;i++){ //Percorre todas as produções
 		
 		for(;!isupper(arvore[pai]);pai++); //Procura a posição do próximo pai
 		
@@ -338,8 +347,8 @@ void criaArvore(){
 		fim_tree=k_tree*pai+j;
 		
 		if(j>k_tree) //j vai ter o comprimento da última produção. Se esse comprimento for maior que o anterior, atualiza o valor da constante
-			k_tree=j;
+			k_tree=j; //k_tree funciona como o espaçamento para caber novos filhos sem sobrescrever filhos antigos
 			
-		pai++; //Incrementa a posição do pai atual para procurar o próximo
+		pai++; //Incrementa a posição do pai atual para procurar o próximo - senão o for que procura a posição do próximo pai não é executado
 	}
 }
